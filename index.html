@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Password Generator</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-100 p-6">
+  <div class="max-w-2xl mx-auto bg-white p-6 rounded shadow">
+    <h1 class="text-2xl font-bold mb-4">Password Generator</h1>
+
+    <div class="mb-4">
+      <ul class="flex border-b">
+        <li class="-mb-px mr-1">
+          <button id="simpleTab" class="bg-white inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold" onclick="switchTab('simple')">Simple</button>
+        </li>
+        <li class="mr-1">
+          <button id="advancedTab" class="bg-gray-200 inline-block py-2 px-4 font-semibold" onclick="switchTab('advanced')">Advanced</button>
+        </li>
+      </ul>
+    </div>
+
+    <div id="simpleMode" class="">
+      <label class="block mb-2">
+        Password Length: <span id="simpleLengthVal">16</span>
+        <input type="range" id="simpleLength" min="4" max="64" value="16" class="w-full" oninput="document.getElementById('simpleLengthVal').innerText = this.value">
+      </label>
+      <label class="block mb-2">
+        <input type="checkbox" id="simpleEasy"> Easy to remember (use dictionary with special chars)
+      </label>
+      <label class="block mb-4">
+        <input type="checkbox" id="showDict" value="false"> Show dictionary
+      </label>
+      <textarea id="dictEditor" class="w-full h-32 p-2 border rounded hidden" placeholder="Enter one word per line"></textarea>
+    </div>
+
+    <div id="advancedMode" class="hidden">
+      <label class="block mb-2">
+        Password Length:
+        <input type="number" id="length" value="16" min="4" max="64" class="border p-1 rounded w-full">
+      </label>
+
+      <label class="block mb-2">
+        <input type="checkbox" id="noSimilar"> Avoid similar characters (O/0, l/1, etc)
+      </label>
+
+      <label class="block mb-2">
+        <input type="checkbox" id="noRepeat"> No repeated characters
+      </label>
+
+      <label class="block mb-2">
+        <input type="checkbox" id="noSeq"> No numeric sequences (e.g. 123)
+      </label>
+
+      <label class="block mb-2">
+        <input type="checkbox" id="useDictionary"> Use passphrase (dictionary words with special characters)
+      </label>
+
+      <label class="block mb-2">
+        <input type="checkbox" id="includeLower" checked> Include lowercase letters
+      </label>
+
+      <label class="block mb-2">
+        <input type="checkbox" id="includeUpper" checked> Include uppercase letters
+      </label>
+
+      <label class="block mb-2">
+        <input type="checkbox" id="includeNumbers" checked> Include numbers
+      </label>
+
+      <label class="block mb-2">
+        <input type="checkbox" id="includeSpecial" checked> Include special characters
+      </label>
+
+      <label class="block mb-2">
+        Special characters to use:
+        <input type="text" id="customSpecials" class="border p-1 rounded w-full" value="!@#$%^&*()">
+      </label>
+    </div>
+
+    <button class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mt-4" onclick="generatePassword()">Generate</button>
+
+    <div class="mt-4 p-4 bg-gray-100 rounded" id="result"></div>
+  </div>
+
+  <script>
+    const defaultDict = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel", "india", "juliet", "kilo", "lima", "mike", "november", "oscar", "papa", "quebec", "romeu", "sierra", "tango", "uniform", "victor", "whiskey", "x-ray", "yankee", "zulu"];
+    let dictionary = [...defaultDict];
+
+    if (document.getElementById('showDict').checked)
+      document.getElementById('dictEditor').classList.remove('hidden');
+
+    document.getElementById('showDict').addEventListener('change', (e) => {
+      document.getElementById('dictEditor').classList.toggle('hidden', !e.target.checked);
+      if (e.target.checked) {
+        document.getElementById('dictEditor').value = dictionary.join("\n");
+      } else {
+        dictionary = document.getElementById('dictEditor').value.split("\n").filter(w => w.trim());
+      }
+    });
+
+    function switchTab(mode) {
+      const isSimple = mode === 'simple';
+      document.getElementById('simpleMode').classList.toggle('hidden', !isSimple);
+      document.getElementById('advancedMode').classList.toggle('hidden', isSimple);
+      document.getElementById('simpleTab').className = isSimple ? "bg-white inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold" : "bg-gray-200 inline-block py-2 px-4 font-semibold";
+      document.getElementById('advancedTab').className = !isSimple ? "bg-white inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold" : "bg-gray-200 inline-block py-2 px-4 font-semibold";
+    }
+
+    function generatePassword() {
+      const isSimple = !document.getElementById('simpleMode').classList.contains('hidden');
+      let length = isSimple ? parseInt(document.getElementById('simpleLength').value) : parseInt(document.getElementById('length').value);
+      const useDict = isSimple ? document.getElementById('simpleEasy').checked : document.getElementById('useDictionary').checked;
+      const includeLower = isSimple ? true : document.getElementById('includeLower').checked;
+      const includeUpper = isSimple ? true : document.getElementById('includeUpper').checked;
+      const includeNumbers = isSimple ? true : document.getElementById('includeNumbers').checked;
+      const includeSpecial = isSimple ? true : document.getElementById('includeSpecial').checked;
+      const customSpecials = isSimple ? '!@#$%^&*()' : document.getElementById('customSpecials').value;
+
+      if (useDict) {
+        const words = [];
+        const specials = customSpecials.split("");
+        while (words.join("").length < length) {
+          const word = dictionary[Math.floor(Math.random() * dictionary.length)];
+          const sep = specials[Math.floor(Math.random() * specials.length)];
+          words.push(word);
+          words.push(sep);
+        }
+        document.getElementById("result").innerText = words.join("").slice(0, length);
+        return;
+      }
+
+      let charset = "";
+      if (includeLower) charset += "abcdefghijklmnopqrstuvwxyz";
+      if (includeUpper) charset += "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      if (includeNumbers) charset += "0123456789";
+      if (includeSpecial) charset += customSpecials;
+
+      const noSimilar = !isSimple && document.getElementById("noSimilar").checked;
+      const noRepeat = !isSimple && document.getElementById("noRepeat").checked;
+      const noSeq = !isSimple && document.getElementById("noSeq").checked;
+
+      const similarChars = /[O0Il1]/g;
+      let password = "";
+
+      while (password.length < length) {
+        const char = charset[Math.floor(Math.random() * charset.length)];
+        if (noSimilar && char.match(similarChars)) continue;
+        if (noRepeat && password.includes(char)) continue;
+        if (noSeq && password.length >= 2) {
+          const last = password.charCodeAt(password.length - 1);
+          const secondLast = password.charCodeAt(password.length - 2);
+          if ((secondLast + 1 === last && last + 1 === char.charCodeAt(0)) ||
+              (secondLast - 1 === last && last - 1 === char.charCodeAt(0))) continue;
+        }
+        password += char;
+      }
+
+      document.getElementById("result").innerText = password;
+    }
+  </script>
+</body>
+</html>
